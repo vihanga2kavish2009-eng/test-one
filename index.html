@@ -50,6 +50,8 @@
         overflow: hidden;
         border-radius: 12px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        background: #222; /* Placeholder color */
+        min-height: 250px;
       }
 
       .img-wrapper img {
@@ -63,7 +65,7 @@
       /* Download Button Overlay */
       .download-btn {
         position: absolute;
-        bottom: -50px; /* මුලින් හංගලා තියෙන්නේ */
+        bottom: -50px; 
         left: 0;
         width: 100%;
         padding: 12px 0;
@@ -83,7 +85,7 @@
       }
 
       .img-wrapper:hover .download-btn {
-        bottom: 0; /* Mouse එක ගෙනියනකොට උඩට එනවා */
+        bottom: 0; 
       }
 
       /* --- Big Watermark --- */
@@ -101,6 +103,13 @@
         text-transform: uppercase;
         user-select: none;
       }
+
+      .loader-text {
+        text-align: center;
+        padding: 20px;
+        color: #888;
+        font-size: 14px;
+      }
     </style>
   </head>
   <body>
@@ -114,51 +123,75 @@
 
     <div class="header">
       <h1>My Premium Photo Gallery</h1>
-      <p>Hover over images to download</p>
+      <p>Scroll down to explore 300+ images</p>
     </div>
     
     <div class="gallery-container" id="imageGallery"></div>
+    <div id="loader" class="loader-text">Loading more magic...</div>
 
     <script>
       const gallery = document.getElementById('imageGallery');
+      const loader = document.getElementById('loader');
+      
+      let imageCount = 0;
+      const maxImages = 300;
+      const batchSize = 15; // එක පාරකට load වන පින්තූර ගණන
 
-      // පින්තූර 50ක් generate කිරීම සහ download link එකතු කිරීම
-      for (let i = 1; i <= 50; i++) {
-        const imageUrl = `https://picsum.photos/800/600?random=${i}`;
-        
-        // Wrapper div එකක් සෑදීම
-        const wrapper = document.createElement('div');
-        wrapper.className = 'img-wrapper';
+      // පින්තූර සෑදීමේ function එක
+      function addImages(count) {
+        for (let i = 0; i < count; i++) {
+          if (imageCount >= maxImages) {
+            loader.innerText = "You've reached the end of the gallery!";
+            return;
+          }
+          imageCount++;
+          
+          const imageUrl = `https://picsum.photos/800/600?random=${imageCount}`;
+          
+          const wrapper = document.createElement('div');
+          wrapper.className = 'img-wrapper';
 
-        // Image එක සෑදීම
-        const img = document.createElement('img');
-        img.src = imageUrl;
-        img.alt = `Gallery Image ${i}`;
-        img.loading = "lazy";
+          const img = document.createElement('img');
+          img.src = imageUrl;
+          img.alt = `Gallery Image ${imageCount}`;
+          img.loading = "lazy";
 
-        // Download Button එක සෑදීම
-        const dlBtn = document.createElement('button');
-        dlBtn.className = 'download-btn';
-        dlBtn.innerHTML = '⬇ Download Image';
-        dlBtn.onclick = () => downloadImage(imageUrl, `vihanga-photo-${i}.jpg`);
+          const dlBtn = document.createElement('button');
+          dlBtn.className = 'download-btn';
+          dlBtn.innerHTML = '⬇ Download Image';
+          dlBtn.onclick = () => downloadImage(imageUrl, `vihanga-photo-${imageCount}.jpg`);
 
-        wrapper.appendChild(img);
-        wrapper.appendChild(dlBtn);
-        gallery.appendChild(wrapper);
+          wrapper.appendChild(img);
+          wrapper.appendChild(dlBtn);
+          gallery.appendChild(wrapper);
+        }
       }
 
-      // පින්තූරය download කිරීමට අවශ්‍ය function එක
-      async function downloadImage(imageSrc, name) {
-        const image = await fetch(imageSrc);
-        const imageBlog = await image.blob();
-        const imageURL = URL.createObjectURL(imageBlog);
+      // මුල් පින්තූර ටික load කිරීම
+      addImages(batchSize);
 
-        const link = document.createElement('a');
-        link.href = imageURL;
-        link.download = name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      // Scroll කරන විට අලුත් පින්තූර load කිරීම (Infinite Scroll)
+      window.addEventListener('scroll', () => {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+          addImages(batchSize);
+        }
+      });
+
+      async function downloadImage(imageSrc, name) {
+        try {
+          const image = await fetch(imageSrc);
+          const imageBlog = await image.blob();
+          const imageURL = URL.createObjectURL(imageBlog);
+
+          const link = document.createElement('a');
+          link.href = imageURL;
+          link.download = name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (error) {
+          console.error("Download failed", error);
+        }
       }
     </script>
 
